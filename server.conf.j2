@@ -1,0 +1,13 @@
+server {
+    listen {{ server_port }};
+
+    server_name {{ server_name }};
+
+    location {{ path }} {
+        return {{ status_code }} '{{ message }}';
+    }
+
+    location {{ path2 }} {
+        return {{ status_code2 }} '{{ message2 }}';
+    }
+}
