@@ -1,5 +1,5 @@
 ---
-- hosts: lb
+- hosts: app
   become: yes
 
   tasks:
@@ -7,7 +7,7 @@
       apt:
         name: nginx
         state: present
-
+    
     - name: Убедиться, что сервис nginx запущен
       service:
         name: nginx
@@ -18,17 +18,42 @@
       copy: 
         src: ./nginx.conf
         dest: /etc/nginx/nginx.conf
-      notify:
-        - reload-nginx
 
     - name: Удаляет default.conf
       file: 
         path: /etc/nginx/conf.d/default.conf
         state: absent
 
+    - name: Копирует api.service
+      copy: 
+        src: api.service
+        dest: /etc/systemd/system
+
+    - name: Копирует setup.sh
+      copy:
+        src: setup.sh
+        dest: /root/setup.sh
+
+    - name: права setup.sh
+      file: 
+        dest: /root/setup.sh
+        mode: 755
+
+    - name: запуск api.service
+      service: 
+        name: api.service
+        state: started
+
     - template: 
-        src: "./server.conf.j2"
-        dest: "/etc/nginx/conf.d/{{ item.server_name }}.conf"
+        src: app.conf.j2
+        dest: /etc/nginx/conf.d/app.conf
+      vars:
+        server_port: 9999
+        server_name: example.com
+
+    - template: 
+        src: server.conf.j2
+        dest: "/etc/nginx/conf.d/{{item.server_name}}.conf"
       vars: 
         server_port: "{{item.server_port}}"
         server_name: "{{item.server_name}}"
@@ -36,9 +61,9 @@
         status_code: "{{item.status_code}}"
         message: "{{item.message}}"
         path2: "{{item.path2}}"
-        status_code2: "{{item.status_code2}}"
+        status_code2: "{{item.status_code2}}" 
         message2: "{{item.message2}}"
-
+      
       loop:
         - server_port: 7070
           server_name: jmart-ansible.kz
@@ -50,7 +75,7 @@
           message2: Это страница профиля.
 
         - server_port: 8080
-          server_name: jusan-ansible.kz
+          server_name: jusan-ansible.kz 
           path: /
           status_code: 200
           message: Добро пожаловать на Jusan Bank!
@@ -66,9 +91,32 @@
           path2: /user
           status_code2: 203
           message2: Это страница с вашим брокерским счетом.
-      
-  handlers:
-    - name: reload-nginx
-      service: 
-        name: nginx 
-        state: reloaded
+            
+    
+    - name: Убедиться, что сервис nginx запущен
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+
+- hosts: lb
+  become: yes
+
+  tasks:
+    - apt: 
+        name: nginx
+        state: present
+
+    - template: 
+        src: lb.conf.j2
+        dest: /etc/nginx/conf.d/lb.conf
+      vars:
+        server_port: 80
+        server_name: jusan-apps.kz
+
+
+    - name: Убедиться, что сервис nginx запущен
+      service:
+        name: nginx
+        state: started
+        enabled: yes
