@@ -1,0 +1,14 @@
+upstream lb {
+    server local-vps-23:9090;
+    server local-vps-24:9090;
+}
+
+server {
+    listen {{ server_port }};
+    server_name {{ server_name }};
+
+    location / {
+        proxy_pass http://lb;
+        add_header X-Upstream $upstream_addr;
+    }
+}
