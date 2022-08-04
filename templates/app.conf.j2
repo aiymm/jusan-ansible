@@ -1,0 +1,14 @@
+upstream app {
+    server local-vps-24:24;
+    server local-vps-23:23;
+}
+
+server {
+    listen {{ server_port }};
+    server_name {{ server_name }};
+
+    location / {
+        proxy_pass http://app;
+        add_header X-Upstream $upstream_addr;
+    }
+}
